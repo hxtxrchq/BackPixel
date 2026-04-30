@@ -101,7 +101,7 @@ npm run build
 5. Sincroniza DB e inicia con PM2:
 ```bash
 npm run db:sync
-pm2 start dist/server.js --name "pixelbros-backend" --watch dist
+pm2 start dist/src/server.js --name "pixelbros-backend" --watch dist
 pm2 save
 pm2 startup
 ```

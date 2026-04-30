@@ -61,7 +61,7 @@ npm run db:sync
 
 # 8. Iniciar con PM2
 echo "✅ Iniciando backend con PM2..."
-pm2 start dist/server.js --name "pixelbros-backend" --watch dist
+pm2 start dist/src/server.js --name "pixelbros-backend" --watch dist
 pm2 save
 pm2 startup
 
