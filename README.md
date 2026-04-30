@@ -42,12 +42,29 @@ npm run dev
 
 API base: `http://localhost:4000/api/v1`
 
-## 4) Despliegue en Droplet
+## 4) Despliegue en Droplet (RECOMENDADO)
+
+### Opción A: Script automático
+
+```bash
+# Copia el script en tu droplet y ejecuta:
+sudo bash deploy.sh
+```
+
+El script:
+- Clona/actualiza el repo
+- Instala dependencias
+- Genera Prisma Client
+- Compila TypeScript
+- Sincroniza BD
+- Inicia con PM2
+
+### Opción B: Pasos manuales
 
 1. Clona el repo en tu droplet:
 ```bash
-cd /home/user/pixelbros
-git clone <backend-repo-url> backend
+cd /home/pixelbros
+git clone https://github.com/hxtxrchq/BackPixel.git backend
 cd backend
 ```
 
@@ -81,44 +98,61 @@ FRONTEND_ORIGINS=https://pixelbros.pe,https://www.pixelbros.pe
 npm run build
 ```
 
-5. Sincroniza DB e inicia:
+5. Sincroniza DB e inicia con PM2:
 ```bash
 npm run db:sync
-npm start
-# O usa PM2: pm2 start dist/server.js --name "pixelbros-backend"
+pm2 start dist/server.js --name "pixelbros-backend" --watch dist
+pm2 save
+pm2 startup
 ```
 
-## 5) Despliegue en Vercel
+### Configurar Nginx como reverse proxy
 
-1. Conecta el repo GitHub en Vercel:
-   - Ve a [vercel.com](https://vercel.com)
-   - Click "Add New" → "Project"
-   - Importa el repositorio `BackPixel` desde GitHub
+1. Copia el archivo de ejemplo:
+```bash
+sudo cp nginx.conf.example /etc/nginx/sites-available/pixelbros-backend
+```
 
-2. En la sección **Environment Variables**, agrega las siguientes (copia de `.env.vercel`):
-   - `DATABASE_URL`: `postgresql://user:pass@host:5432/pixelbros`
-   - `DIRECT_URL`: `postgresql://user:pass@host:6543/pixelbros`
-   - `JWT_ACCESS_SECRET`: (genera 32+ caracteres seguros)
-   - `JWT_REFRESH_SECRET`: (genera 32+ caracteres seguros)
-   - `NODE_ENV`: `production`
-   - `REFRESH_COOKIE_SECURE`: `true`
-   - `REFRESH_COOKIE_SAMESITE`: `none`
-   - `FRONTEND_ORIGINS`: `https://pixelbros.pe,https://www.pixelbros.pe`
+2. Habilita el sitio:
+```bash
+sudo ln -s /etc/nginx/sites-available/pixelbros-backend /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
 
-3. En **Project Settings** → **Domains**, agrega:
-   - `backendpixel.chiqo.site`
-   - Configura el DNS según las instrucciones de Vercel
+3. Genera SSL con Certbot:
+```bash
+sudo apt-get install certbot python3-certbot-nginx
+sudo certbot certonly -d backendpixel.chiqo.site
+```
 
-4. Vercel compilará e iniciará automáticamente:
-   - Build: `npm run build && npm run db:generate`
-   - Output: `api/index.ts` → serverless function
+4. El backend estará en: `https://backendpixel.chiqo.site/api/v1`
 
-5. API estará en: `https://backendpixel.chiqo.site/api/v1`
+### Comandos útiles PM2
+```bash
+pm2 status                          # Ver estado
+pm2 logs pixelbros-backend         # Ver logs
+pm2 restart pixelbros-backend      # Reiniciar
+pm2 stop pixelbros-backend         # Pausar
+pm2 delete pixelbros-backend       # Remover
+```
 
-### Notas sobre Vercel
-- Las serverless functions tienen timeout máximo de 30s
-- La BD debe estar accesible desde Vercel (IP whitelist en PostgreSQL si aplica)
-- Para seed inicial, usa el dashboard de Vercel → Deployments → Logs o ejecuta localmente
+### Actualizar backend en Droplet
+```bash
+cd /home/pixelbros/backend
+git pull origin main
+npm install
+npm run build
+pm2 restart pixelbros-backend
+```
+
+## 5) ¿Vercel o Droplet?
+
+**Vercel** tiene límite de 2048 MB en plan Hobby (gratuito), lo cual es insuficiente para Express + Prisma.
+
+**Recomendación:** Usa tu droplet con PM2 + Nginx. Es más barato, más control, y sin límites de memoria.
+
+Si prefieres Vercel Pro, la configuración `vercel.json` + `api/index.ts` ya está lista. Pero para desarrollo, el droplet es la opción ideal.
 
 Para despliegue en dominio final, el frontend debe apuntar a `https://backendpixel.chiqo.site/api/v1` mediante `VITE_API_URL`.
 
