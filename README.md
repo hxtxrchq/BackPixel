@@ -88,6 +88,38 @@ npm start
 # O usa PM2: pm2 start dist/server.js --name "pixelbros-backend"
 ```
 
+## 5) Despliegue en Vercel
+
+1. Conecta el repo GitHub en Vercel:
+   - Ve a [vercel.com](https://vercel.com)
+   - Click "Add New" → "Project"
+   - Importa el repositorio `BackPixel` desde GitHub
+
+2. En la sección **Environment Variables**, agrega las siguientes (copia de `.env.vercel`):
+   - `DATABASE_URL`: `postgresql://user:pass@host:5432/pixelbros`
+   - `DIRECT_URL`: `postgresql://user:pass@host:6543/pixelbros`
+   - `JWT_ACCESS_SECRET`: (genera 32+ caracteres seguros)
+   - `JWT_REFRESH_SECRET`: (genera 32+ caracteres seguros)
+   - `NODE_ENV`: `production`
+   - `REFRESH_COOKIE_SECURE`: `true`
+   - `REFRESH_COOKIE_SAMESITE`: `none`
+   - `FRONTEND_ORIGINS`: `https://pixelbros.pe,https://www.pixelbros.pe`
+
+3. En **Project Settings** → **Domains**, agrega:
+   - `backendpixel.chiqo.site`
+   - Configura el DNS según las instrucciones de Vercel
+
+4. Vercel compilará e iniciará automáticamente:
+   - Build: `npm run build && npm run db:generate`
+   - Output: `api/index.ts` → serverless function
+
+5. API estará en: `https://backendpixel.chiqo.site/api/v1`
+
+### Notas sobre Vercel
+- Las serverless functions tienen timeout máximo de 30s
+- La BD debe estar accesible desde Vercel (IP whitelist en PostgreSQL si aplica)
+- Para seed inicial, usa el dashboard de Vercel → Deployments → Logs o ejecuta localmente
+
 Para despliegue en dominio final, el frontend debe apuntar a `https://backendpixel.chiqo.site/api/v1` mediante `VITE_API_URL`.
 
 Si el frontend vive en `pixelbros.pe` y el backend en `backendpixel.chiqo.site`, las cookies de refresh deben salir con `SameSite=None` y `Secure=true` para que el navegador las envie en las peticiones con `credentials: 'include'`.

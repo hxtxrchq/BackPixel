@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build && npm run db:generate",
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "api/index.ts": {
+      "runtime": "nodejs20.x",
+      "memory": 3008,
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.ts"
+    }
+  ]
+}
