@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  GLOBAL_ADMIN
+  TI_ADMIN
+}
+
+model User {
+  id           String    @id @default(cuid())
+  fullName     String
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(GLOBAL_ADMIN)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+  contents     Content[] @relation("CreatedBy")
+  quotes       Quote[]   @relation("QuoteCreatedBy")
+}
+
+model Session {
+  id               String   @id @default(cuid())
+  userId           String
+  refreshTokenHash String   @unique
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Content {
+  id               String         @id @default(cuid())
+  companyName      String
+  title            String
+  slug             String         @unique
+  category         String
+  showOnHome       Boolean        @default(false)
+  showOnPortfolio  Boolean        @default(true)
+  coverUrl         String?
+  coverMimeType    String?
+  galleryCount     Int            @default(0)
+  createdById      String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  medias           ContentMedia[]
+  createdBy        User?          @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([showOnHome])
+  @@index([showOnPortfolio])
+}
+
+model ContentMedia {
+  id         String   @id @default(cuid())
+  contentId  String
+  url        String
+  mimeType   String?
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
+}
+
+model Quote {
+  id                     String   @id @default(cuid())
+  quoteNumber            String   @unique
+  clientName             String
+  companyName            String
+  serviceType            String
+  serviceDetail          String
+  contractDurationMonths Int
+  basePrice              Float
+  discountApplied        Float    @default(0)
+  finalPrice             Float
+  observations           String?
+  status                 String   @default("Enviada")
+  convertedToActiveClient Boolean @default(false)
+  convertedAt            DateTime?
+  createdById            String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  createdBy User? @relation("QuoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([companyName])
+  @@index([clientName])
+  @@index([createdAt])
+}
