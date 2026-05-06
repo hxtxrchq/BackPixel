@@ -8,6 +8,7 @@ const userSelect = {
   email: true,
   role: true,
   isActive: true,
+  dashboardPanels: true,
   passwordHash: true,
 } satisfies Prisma.UserSelect;
 
@@ -23,6 +24,39 @@ export class AuthRepository {
     return prisma.user.findUnique({
       where: { id: userId },
       select: userSelect,
+    });
+  }
+
+  async updateUserProfile(userId: string, data: { fullName: string; email?: string }) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        fullName: data.fullName,
+        email: data.email ? data.email.toLowerCase() : undefined,
+      },
+      select: userSelect,
+    });
+  }
+
+  async updatePasswordHash(userId: string, passwordHash: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+      select: userSelect,
+    });
+  }
+
+  async findUserSchedule(userId: string, month: string) {
+    return prisma.userSchedule.findUnique({
+      where: { userId_month: { userId, month } },
+    });
+  }
+
+  async upsertUserSchedule(userId: string, month: string, text: string) {
+    return prisma.userSchedule.upsert({
+      where: { userId_month: { userId, month } },
+      create: { userId, month, text },
+      update: { text },
     });
   }
 

@@ -41,7 +41,11 @@ export const errorHandler = (err: unknown, _req: Request, res: Response, _next: 
   }
 
   if (process.env.NODE_ENV !== 'production') {
-    console.error('[UNHANDLED_ERROR]', err);
+    console.error('[UNHANDLED_ERROR]', {
+      type: err instanceof Error ? err.constructor.name : typeof err,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
   }
 
   return res.status(500).json({

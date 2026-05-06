@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { env } from '../../config/env.js';
 import { AuthService } from './auth.service.js';
-import { loginSchema } from './auth.validators.js';
+import { changePasswordSchema, loginSchema, monthSchema, updateProfileSchema } from './auth.validators.js';
 
 const buildMeta = (req: Request) => ({
   userAgent: req.get('user-agent') ?? undefined,
@@ -75,6 +75,67 @@ export class AuthController {
 
       const user = await this.authService.getProfile(userId);
       return res.status(200).json({ user });
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  updateProfile = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.auth?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: 'No autenticado' });
+      }
+
+      const payload = updateProfileSchema.parse(req.body);
+      const user = await this.authService.updateProfile(userId, payload);
+      return res.status(200).json({ user });
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  changePassword = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.auth?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: 'No autenticado' });
+      }
+
+      const payload = changePasswordSchema.parse(req.body);
+      await this.authService.changePassword(userId, payload.currentPassword, payload.newPassword);
+      return res.status(204).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  getMySchedule = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.auth?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: 'No autenticado' });
+      }
+
+      const month = monthSchema.parse(req.query.month);
+      const schedule = await this.authService.getUserSchedule(userId, month);
+      return res.status(200).json({ schedule });
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  setMySchedule = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.auth?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: 'No autenticado' });
+      }
+
+      const month = monthSchema.parse(req.query.month);
+      const text = typeof req.body?.text === 'string' ? req.body.text : '';
+      const schedule = await this.authService.setUserSchedule(userId, month, text);
+      return res.status(200).json({ schedule });
     } catch (error) {
       return next(error);
     }

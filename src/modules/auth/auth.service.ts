@@ -1,7 +1,7 @@
 import { addDays, isAfter } from 'date-fns';
 import { env } from '../../config/env.js';
 import { HttpError } from '../../lib/http-error.js';
-import { comparePassword } from '../../lib/password.js';
+import { comparePassword, hashPassword } from '../../lib/password.js';
 import { sha256 } from '../../lib/hash.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../lib/jwt.js';
 import type { SessionMeta, SafeUser } from './auth.types.js';
@@ -12,11 +12,15 @@ const toSafeUser = (user: {
   fullName: string;
   email: string;
   role: SafeUser['role'];
+  dashboardPanels?: unknown | null;
 }): SafeUser => ({
   id: user.id,
   fullName: user.fullName,
+  firstName: null,
+  lastName: null,
   email: user.email,
   role: user.role,
+  dashboardPanels: user.dashboardPanels ?? null,
 });
 
 export class AuthService {
@@ -112,5 +116,67 @@ export class AuthService {
     }
 
     return toSafeUser(user);
+  }
+
+  async updateProfile(userId: string, payload: { fullName?: string; email?: string }) {
+    const current = await this.authRepository.findUserById(userId);
+    if (!current || !current.isActive) {
+      throw new HttpError(404, 'Usuario no encontrado');
+    }
+
+    const normalizedEmail = payload.email?.toLowerCase();
+    if (normalizedEmail && normalizedEmail !== current.email) {
+      const existing = await this.authRepository.findUserByEmail(normalizedEmail);
+      if (existing && existing.id !== userId) {
+        throw new HttpError(409, 'El correo ya esta registrado');
+      }
+    }
+
+    const fullName = payload.fullName?.trim() ?? current.fullName;
+    const updated = await this.authRepository.updateUserProfile(userId, {
+      fullName,
+      email: normalizedEmail ?? current.email,
+    });
+
+    return toSafeUser(updated);
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.authRepository.findUserById(userId);
+    if (!user || !user.isActive) {
+      throw new HttpError(404, 'Usuario no encontrado');
+    }
+
+    const isMatch = await comparePassword(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      throw new HttpError(401, 'Password actual incorrecto');
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    await this.authRepository.updatePasswordHash(userId, passwordHash);
+  }
+
+  async getUserSchedule(userId: string, month: string) {
+    const user = await this.authRepository.findUserById(userId);
+    if (!user || !user.isActive) {
+      throw new HttpError(404, 'Usuario no encontrado');
+    }
+
+    const schedule = await this.authRepository.findUserSchedule(userId, month);
+    if (!schedule) {
+      return { month, text: '' };
+    }
+
+    return { month: schedule.month, text: schedule.text };
+  }
+
+  async setUserSchedule(userId: string, month: string, text: string) {
+    const user = await this.authRepository.findUserById(userId);
+    if (!user || !user.isActive) {
+      throw new HttpError(404, 'Usuario no encontrado');
+    }
+
+    const schedule = await this.authRepository.upsertUserSchedule(userId, month, text);
+    return { month: schedule.month, text: schedule.text };
   }
 }
