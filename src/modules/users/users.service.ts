@@ -1,4 +1,4 @@
-import { Role } from '@prisma/client';
+import { Role, Prisma } from '@prisma/client';
 import { HttpError } from '../../lib/http-error.js';
 import { hashPassword } from '../../lib/password.js';
 import { UsersRepository } from './users.repository.js';
@@ -48,7 +48,7 @@ export class UsersService {
       passwordHash,
       role: payload.role,
       isActive: payload.isActive,
-      dashboardPanels: payload.dashboardPanels,
+      dashboardPanels: payload.dashboardPanels as unknown as Prisma.JsonValue | null,
     });
 
     return {

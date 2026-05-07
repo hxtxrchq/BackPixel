@@ -19,7 +19,8 @@ export class MonthlyReportsController {
 
   async getById(req: Request, res: Response) {
     try {
-      const report = await service.getById(req.params.id);
+      const id = String(req.params.id);
+      const report = await service.getById(id);
       res.json({ report });
     } catch (err: any) {
       res.status(404).json({ message: err.message });
@@ -48,7 +49,8 @@ export class MonthlyReportsController {
 
   async delete(req: Request, res: Response) {
     try {
-      await service.delete(req.params.id);
+      const id = String(req.params.id);
+      await service.delete(id);
       res.json({ ok: true });
     } catch (err: any) {
       res.status(404).json({ message: err.message });

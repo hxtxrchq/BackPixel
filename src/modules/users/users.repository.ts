@@ -70,7 +70,7 @@ export class UsersRepository {
   ) {
     return prisma.user.update({
       where: { id: userId },
-      data,
+      data: data as Prisma.UserUpdateInput,
       select: userSelect,
     });
   }

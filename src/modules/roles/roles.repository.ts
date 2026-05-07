@@ -1,4 +1,5 @@
 import { prisma } from '../../db/prisma.js';
+import type { RoleConfig } from '@prisma/client';
 
 const DEFAULT_ROLES = [
   { key: 'GLOBAL_ADMIN', label: 'Administrador global', description: 'Acceso completo al sistema', color: '#e73c50' },
@@ -8,11 +9,11 @@ const DEFAULT_ROLES = [
 
 export class RolesRepository {
   async listRoles() {
-    const stored = await prisma.roleConfig.findMany({ orderBy: { key: 'asc' } });
+    const stored: RoleConfig[] = await prisma.roleConfig.findMany({ orderBy: { key: 'asc' } });
 
     // Merge defaults with stored, always returning all 3 enum roles
     return DEFAULT_ROLES.map((def) => {
-      const found = stored.find((r) => r.key === def.key);
+      const found = stored.find((r: RoleConfig) => r.key === def.key);
       return found ?? def;
     });
   }
