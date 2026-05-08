@@ -41,13 +41,15 @@ export class ContentController {
   create = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const payload = createContentSchema.parse(req.body);
-      const files = req.files as { cover?: Express.Multer.File[]; gallery?: Express.Multer.File[] } | undefined;
+      const files = req.files as { cover?: Express.Multer.File[]; logo?: Express.Multer.File[]; gallery?: Express.Multer.File[] } | undefined;
       const coverFile = files?.cover?.[0];
+      const logoFile = files?.logo?.[0];
       const galleryFiles = files?.gallery ?? [];
 
       const item = await this.contentService.createContent({
         ...payload,
         coverFile,
+        logoFile,
         galleryFiles,
         createdById: req.auth?.userId,
       });
@@ -61,12 +63,13 @@ export class ContentController {
   update = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const payload = updateContentSchema.parse(req.body);
-      const files = req.files as { cover?: Express.Multer.File[]; gallery?: Express.Multer.File[] } | undefined;
+      const files = req.files as { cover?: Express.Multer.File[]; logo?: Express.Multer.File[]; gallery?: Express.Multer.File[] } | undefined;
       const coverFile = files?.cover?.[0];
+      const logoFile = files?.logo?.[0];
       const galleryFiles = files?.gallery ?? [];
       const removeMediaIds = payload.removeMediaIds ?? [];
 
-      if (Object.keys(payload).length === 0 && !coverFile && galleryFiles.length === 0 && removeMediaIds.length === 0) {
+      if (Object.keys(payload).length === 0 && !coverFile && !logoFile && galleryFiles.length === 0 && removeMediaIds.length === 0) {
         throw new HttpError(400, 'Debes enviar al menos un cambio para actualizar.');
       }
 
@@ -78,6 +81,7 @@ export class ContentController {
       const item = await this.contentService.updateContent(contentId, {
         ...payload,
         coverFile,
+        logoFile,
         galleryFiles,
         removeMediaIds,
       });

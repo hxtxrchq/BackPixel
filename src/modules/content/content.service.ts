@@ -36,6 +36,7 @@ export class ContentService {
     showOnHome: boolean;
     showOnPortfolio: boolean;
     coverFile?: Express.Multer.File;
+    logoFile?: Express.Multer.File;
     galleryFiles: Express.Multer.File[];
     createdById?: string;
   }) {
@@ -43,6 +44,7 @@ export class ContentService {
     const slug = `${slugify(params.category)}-${slugify(title)}-${Date.now().toString().slice(-6)}`;
 
     const coverUrl = params.coverFile ? `/uploads/content/${params.coverFile.filename}` : undefined;
+    const logoUrl = params.logoFile ? `/uploads/content/${params.logoFile.filename}` : undefined;
 
     const gallery = params.galleryFiles.map((file, index) => ({
       url: `/uploads/content/${file.filename}`,
@@ -59,6 +61,8 @@ export class ContentService {
       showOnPortfolio: params.showOnPortfolio,
       coverUrl,
       coverMimeType: params.coverFile?.mimetype,
+      logoUrl,
+      logoMimeType: params.logoFile?.mimetype,
       gallery,
       createdById: params.createdById,
     });
@@ -71,6 +75,7 @@ export class ContentService {
     showOnHome?: boolean;
     showOnPortfolio?: boolean;
     coverFile?: Express.Multer.File;
+    logoFile?: Express.Multer.File;
     galleryFiles?: Express.Multer.File[];
     removeMediaIds?: string[];
   }) {
@@ -82,6 +87,8 @@ export class ContentService {
       showOnPortfolio: data.showOnPortfolio,
       coverUrl: data.coverFile ? `/uploads/content/${data.coverFile.filename}` : undefined,
       coverMimeType: data.coverFile?.mimetype,
+      logoUrl: data.logoFile ? `/uploads/content/${data.logoFile.filename}` : undefined,
+      logoMimeType: data.logoFile?.mimetype,
       gallery: (data.galleryFiles ?? []).map((file, index) => ({
         url: `/uploads/content/${file.filename}`,
         mimeType: file.mimetype,

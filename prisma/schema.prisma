@@ -101,6 +101,8 @@ model Content {
   showOnPortfolio  Boolean        @default(true)
   coverUrl         String?
   coverMimeType    String?
+  logoUrl          String?
+  logoMimeType     String?
   galleryCount     Int            @default(0)
   createdById      String?
   createdAt        DateTime       @default(now())

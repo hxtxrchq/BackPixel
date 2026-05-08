@@ -13,6 +13,8 @@ export class ContentRepository {
         showOnPortfolio: true,
         coverUrl: true,
         coverMimeType: true,
+        logoUrl: true,
+        logoMimeType: true,
         galleryCount: true,
         createdAt: true,
         updatedAt: true,
@@ -55,6 +57,8 @@ export class ContentRepository {
     showOnPortfolio: boolean;
     coverUrl?: string;
     coverMimeType?: string;
+    logoUrl?: string;
+    logoMimeType?: string;
     gallery: Array<{ url: string; mimeType?: string; sortOrder: number }>;
     createdById?: string;
   }) {
@@ -68,6 +72,8 @@ export class ContentRepository {
         showOnPortfolio: data.showOnPortfolio,
         coverUrl: data.coverUrl,
         coverMimeType: data.coverMimeType,
+        logoUrl: data.logoUrl,
+        logoMimeType: data.logoMimeType,
         galleryCount: data.gallery.length,
         createdById: data.createdById,
         medias: {
@@ -90,6 +96,8 @@ export class ContentRepository {
     showOnPortfolio?: boolean;
     coverUrl?: string;
     coverMimeType?: string;
+    logoUrl?: string;
+    logoMimeType?: string;
     gallery?: Array<{ url: string; mimeType?: string; sortOrder: number }>;
     replaceGallery?: boolean;
     removeMediaIds?: string[];
@@ -102,6 +110,8 @@ export class ContentRepository {
       showOnPortfolio?: boolean;
       coverUrl?: string;
       coverMimeType?: string;
+      logoUrl?: string;
+      logoMimeType?: string;
       medias?:
         | { deleteMany: {}; create: Array<{ url: string; mimeType?: string; sortOrder: number }> }
         | { deleteMany: { id: { in: string[] } } };
@@ -116,6 +126,11 @@ export class ContentRepository {
     if (data.coverUrl) {
       updateData.coverUrl = data.coverUrl;
       updateData.coverMimeType = data.coverMimeType;
+    }
+
+    if (data.logoUrl) {
+      updateData.logoUrl = data.logoUrl;
+      updateData.logoMimeType = data.logoMimeType;
     }
 
     if (data.replaceGallery) {

@@ -16,6 +16,7 @@ contentRouter.post(
   requireRole(Role.GLOBAL_ADMIN, Role.TI_ADMIN),
   contentUpload.fields([
     { name: 'cover', maxCount: 1 },
+    { name: 'logo', maxCount: 1 },
     { name: 'gallery', maxCount: 20 },
   ]),
   contentController.create,
@@ -26,6 +27,7 @@ contentRouter.patch(
   requireRole(Role.GLOBAL_ADMIN, Role.TI_ADMIN),
   contentUpload.fields([
     { name: 'cover', maxCount: 1 },
+    { name: 'logo', maxCount: 1 },
     { name: 'gallery', maxCount: 20 },
   ]),
   contentController.update,
