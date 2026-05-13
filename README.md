@@ -48,6 +48,11 @@ En hosts serverless (ej. Vercel), guardar archivos en disco con Multer **no es p
 
 Variables requeridas:
 ```
+CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
+```
+
+O bien, por separado:
+```
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...

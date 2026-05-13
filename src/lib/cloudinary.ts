@@ -2,9 +2,12 @@ import { v2 as cloudinary } from 'cloudinary';
 import { env } from '../config/env.js';
 
 export const isCloudinaryEnabled =
-  Boolean(env.CLOUDINARY_CLOUD_NAME) && Boolean(env.CLOUDINARY_API_KEY) && Boolean(env.CLOUDINARY_API_SECRET);
+  Boolean(env.CLOUDINARY_URL) ||
+  (Boolean(env.CLOUDINARY_CLOUD_NAME) && Boolean(env.CLOUDINARY_API_KEY) && Boolean(env.CLOUDINARY_API_SECRET));
 
-if (isCloudinaryEnabled) {
+if (env.CLOUDINARY_URL) {
+  cloudinary.config(env.CLOUDINARY_URL);
+} else if (isCloudinaryEnabled) {
   cloudinary.config({
     cloud_name: env.CLOUDINARY_CLOUD_NAME,
     api_key: env.CLOUDINARY_API_KEY,

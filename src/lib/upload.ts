@@ -4,12 +4,13 @@ import multer from 'multer';
 import { isCloudinaryEnabled } from './cloudinary.js';
 
 const uploadRoot = path.resolve(process.cwd(), 'uploads', 'content');
+const isServerlessRuntime = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
 const ensureDir = (dirPath: string) => {
   fs.mkdirSync(dirPath, { recursive: true });
 };
 
-const storage = isCloudinaryEnabled
+const storage = isCloudinaryEnabled || isServerlessRuntime
   ? multer.memoryStorage()
   : multer.diskStorage({
       destination: (_req, _file, callback) => {

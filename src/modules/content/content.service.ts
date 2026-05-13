@@ -20,7 +20,6 @@ export class ContentService {
   }
 
   private async resolveRequiredFileUrl(file: Express.Multer.File): Promise<string> {
-
     // When enabled, store media in Cloudinary to survive serverless deployments.
     if (isCloudinaryEnabled && (file as any).buffer) {
       return uploadBufferToCloudinary({
@@ -29,6 +28,10 @@ export class ContentService {
         folder: 'pixelbros/content',
         resourceType: 'auto',
       });
+    }
+
+    if (!file.filename) {
+      throw new HttpError(503, 'La subida de archivos requiere Cloudinary en este entorno.');
     }
 
     // Fallback: local uploads directory.
