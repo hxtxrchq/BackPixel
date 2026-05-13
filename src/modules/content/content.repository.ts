@@ -49,6 +49,20 @@ export class ContentRepository {
     });
   }
 
+  listHome() {
+    return prisma.content.findMany({
+      where: {
+        showOnHome: true,
+      },
+      include: {
+        medias: {
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   createContent(data: {
     companyName: string;
     title: string;

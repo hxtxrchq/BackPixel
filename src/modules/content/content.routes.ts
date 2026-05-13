@@ -36,3 +36,4 @@ contentRouter.delete('/:contentId', requireAuth, requireRole(Role.GLOBAL_ADMIN),
 
 export const publicContentRouter = Router();
 publicContentRouter.get('/content', contentController.listPublic);
+publicContentRouter.get('/content/home', contentController.listHome);

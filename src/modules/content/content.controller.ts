@@ -38,6 +38,15 @@ export class ContentController {
     }
   };
 
+  listHome = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const items = await this.contentService.listHome();
+      return res.status(200).json({ items });
+    } catch (error) {
+      return next(error);
+    }
+  };
+
   create = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const payload = createContentSchema.parse(req.body);

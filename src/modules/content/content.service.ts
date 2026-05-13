@@ -59,6 +59,10 @@ export class ContentService {
     return this.contentRepository.listPublic();
   }
 
+  listHome() {
+    return this.contentRepository.listHome();
+  }
+
   async createContent(params: {
     companyName: string;
     title?: string;
