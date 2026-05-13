@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "dev:start": "npm run db:sync && npm run dev",
-    "build": "tsc -p tsconfig.json",
+    "build": "npm run db:generate && tsc -p tsconfig.json",
     "start": "node dist/src/server.js",
     "lint": "eslint .",
     "test": "vitest run",

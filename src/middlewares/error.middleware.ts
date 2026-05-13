@@ -21,6 +21,19 @@ const isPrismaConnectionError = (err: unknown) => {
 export const errorHandler = (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   void _next;
 
+  if (err instanceof Error) {
+    console.error('[UNHANDLED_ERROR]', {
+      type: err.constructor.name,
+      message: err.message,
+      stack: err.stack,
+    });
+  } else {
+    console.error('[UNHANDLED_ERROR]', {
+      type: typeof err,
+      message: String(err),
+    });
+  }
+
   if (err instanceof ZodError) {
     return res.status(400).json({
       message: 'Datos invalidos',
@@ -37,14 +50,6 @@ export const errorHandler = (err: unknown, _req: Request, res: Response, _next: 
   if (isPrismaConnectionError(err)) {
     return res.status(503).json({
       message: 'No se pudo conectar a la base de datos. Verifica la conexion de Supabase.',
-    });
-  }
-
-  if (process.env.NODE_ENV !== 'production') {
-    console.error('[UNHANDLED_ERROR]', {
-      type: err instanceof Error ? err.constructor.name : typeof err,
-      message: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack : undefined,
     });
   }
 
