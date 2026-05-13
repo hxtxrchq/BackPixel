@@ -22,6 +22,12 @@ const envSchema = z.object({
   REFRESH_COOKIE_NAME: z.string().default('pixelbros_refresh_token'),
   REFRESH_COOKIE_SECURE: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
   REFRESH_COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).default('lax'),
+
+  // Optional: enable persistent media uploads via Cloudinary (recommended for serverless hosts like Vercel)
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
+  CLOUDINARY_FOLDER: z.string().default('pixelbros'),
 });
 
 const parsed = envSchema.safeParse(process.env);

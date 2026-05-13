@@ -15,6 +15,7 @@ export class ContentRepository {
         coverMimeType: true,
         logoUrl: true,
         logoMimeType: true,
+        logoLabel: true,
         galleryCount: true,
         createdAt: true,
         updatedAt: true,
@@ -55,6 +56,7 @@ export class ContentRepository {
     category: string;
     showOnHome: boolean;
     showOnPortfolio: boolean;
+    logoLabel?: string;
     coverUrl?: string;
     coverMimeType?: string;
     logoUrl?: string;
@@ -74,6 +76,7 @@ export class ContentRepository {
         coverMimeType: data.coverMimeType,
         logoUrl: data.logoUrl,
         logoMimeType: data.logoMimeType,
+        logoLabel: data.logoLabel,
         galleryCount: data.gallery.length,
         createdById: data.createdById,
         medias: {
@@ -94,10 +97,11 @@ export class ContentRepository {
     category?: string;
     showOnHome?: boolean;
     showOnPortfolio?: boolean;
-    coverUrl?: string;
-    coverMimeType?: string;
-    logoUrl?: string;
-    logoMimeType?: string;
+    coverUrl?: string | null;
+    coverMimeType?: string | null;
+    logoUrl?: string | null;
+    logoMimeType?: string | null;
+    logoLabel?: string | null;
     gallery?: Array<{ url: string; mimeType?: string; sortOrder: number }>;
     replaceGallery?: boolean;
     removeMediaIds?: string[];
@@ -108,10 +112,11 @@ export class ContentRepository {
       category?: string;
       showOnHome?: boolean;
       showOnPortfolio?: boolean;
-      coverUrl?: string;
-      coverMimeType?: string;
-      logoUrl?: string;
-      logoMimeType?: string;
+      coverUrl?: string | null;
+      coverMimeType?: string | null;
+      logoUrl?: string | null;
+      logoMimeType?: string | null;
+      logoLabel?: string | null;
       medias?:
         | { deleteMany: {}; create: Array<{ url: string; mimeType?: string; sortOrder: number }> }
         | { deleteMany: { id: { in: string[] } } };
@@ -123,12 +128,16 @@ export class ContentRepository {
       showOnPortfolio: data.showOnPortfolio,
     };
 
-    if (data.coverUrl) {
+    if (data.logoLabel !== undefined) {
+      updateData.logoLabel = data.logoLabel;
+    }
+
+    if (data.coverUrl !== undefined) {
       updateData.coverUrl = data.coverUrl;
       updateData.coverMimeType = data.coverMimeType;
     }
 
-    if (data.logoUrl) {
+    if (data.logoUrl !== undefined) {
       updateData.logoUrl = data.logoUrl;
       updateData.logoMimeType = data.logoMimeType;
     }

@@ -28,6 +28,10 @@ export const createContentSchema = z.object({
   category: z.string().min(2).max(80),
   showOnHome: z.coerce.boolean().default(false),
   showOnPortfolio: z.coerce.boolean().default(true),
+  logoLabel: z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+    z.string().trim().min(1).max(120).optional(),
+  ),
 });
 
 export const updateContentSchema = z
@@ -37,5 +41,11 @@ export const updateContentSchema = z
     category: z.string().min(2).max(80).optional(),
     showOnHome: z.coerce.boolean().optional(),
     showOnPortfolio: z.coerce.boolean().optional(),
+    logoLabel: z.preprocess(
+      (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+      z.string().trim().min(1).max(120).nullable().optional(),
+    ),
+    removeCover: z.coerce.boolean().optional(),
+    removeLogo: z.coerce.boolean().optional(),
     removeMediaIds: removeMediaIdsSchema.optional(),
   });

@@ -6,3 +6,6 @@ coverage/
 !.env.example
 api/
 vercel.json
+
+# Local uploads (non-persistent in serverless)
+uploads/

@@ -10,7 +10,12 @@ import { prisma } from './db/prisma.js';
 
 export const app = express();
 
-app.use(helmet());
+app.use(
+  helmet({
+    // Required so the frontend (different origin/port) can display images/videos served by this API.
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }),
+);
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -32,6 +37,7 @@ app.use(
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+app.use(`${env.API_PREFIX}/uploads`, express.static(path.resolve(process.cwd(), 'uploads')));
 
 app.get('/health', (_req, res) => {
   res.status(200).json({

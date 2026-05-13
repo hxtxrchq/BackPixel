@@ -42,6 +42,24 @@ npm run dev
 
 API base: `http://localhost:4000/api/v1`
 
+## 3.1) Uploads persistentes (Cloudinary)
+
+En hosts serverless (ej. Vercel), guardar archivos en disco con Multer **no es persistente**. Para que logos/portadas/galeria queden guardados y carguen siempre, configura Cloudinary en el backend.
+
+Variables requeridas:
+```
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+```
+
+Opcional:
+```
+CLOUDINARY_FOLDER=pixelbros
+```
+
+Cuando estas variables existen, el backend sube los archivos a Cloudinary y guarda la URL absoluta en la base de datos.
+
 ## 4) Despliegue en Droplet (RECOMENDADO)
 
 ### Opción A: Script automático

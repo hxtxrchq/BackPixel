@@ -103,6 +103,7 @@ model Content {
   coverMimeType    String?
   logoUrl          String?
   logoMimeType     String?
+  logoLabel        String?
   galleryCount     Int            @default(0)
   createdById      String?
   createdAt        DateTime       @default(now())

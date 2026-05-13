@@ -1,5 +1,6 @@
 import { HttpError } from '../../lib/http-error.js';
 import { ContentRepository } from './content.repository.js';
+import { isCloudinaryEnabled, uploadBufferToCloudinary } from '../../lib/cloudinary.js';
 
 const slugify = (value: string) =>
   value
@@ -11,6 +12,35 @@ const slugify = (value: string) =>
 
 export class ContentService {
   constructor(private readonly contentRepository = new ContentRepository()) {}
+
+  private async resolveOptionalFileUrl(file?: Express.Multer.File) {
+    if (!file) return undefined;
+
+    return this.resolveRequiredFileUrl(file);
+  }
+
+  private async resolveRequiredFileUrl(file: Express.Multer.File): Promise<string> {
+
+    // When enabled, store media in Cloudinary to survive serverless deployments.
+    if (isCloudinaryEnabled && (file as any).buffer) {
+      return uploadBufferToCloudinary({
+        buffer: (file as any).buffer,
+        originalName: file.originalname,
+        folder: 'pixelbros/content',
+        resourceType: 'auto',
+      });
+    }
+
+    // Fallback: local uploads directory.
+    return `/uploads/content/${file.filename}`;
+  }
+
+  private resolveLocalGallery(file: Express.Multer.File) {
+    return {
+      url: `/uploads/content/${file.filename}`,
+      mimeType: file.mimetype,
+    };
+  }
 
   listAll() {
     return this.contentRepository.listAll();
@@ -29,12 +59,13 @@ export class ContentService {
     return this.contentRepository.listPublic();
   }
 
-  createContent(params: {
+  async createContent(params: {
     companyName: string;
     title?: string;
     category: string;
     showOnHome: boolean;
     showOnPortfolio: boolean;
+    logoLabel?: string;
     coverFile?: Express.Multer.File;
     logoFile?: Express.Multer.File;
     galleryFiles: Express.Multer.File[];
@@ -43,14 +74,25 @@ export class ContentService {
     const title = params.title?.trim() || params.companyName.trim();
     const slug = `${slugify(params.category)}-${slugify(title)}-${Date.now().toString().slice(-6)}`;
 
-    const coverUrl = params.coverFile ? `/uploads/content/${params.coverFile.filename}` : undefined;
-    const logoUrl = params.logoFile ? `/uploads/content/${params.logoFile.filename}` : undefined;
+    const coverUrl = await this.resolveOptionalFileUrl(params.coverFile);
+    const logoUrl = await this.resolveOptionalFileUrl(params.logoFile);
 
-    const gallery = params.galleryFiles.map((file, index) => ({
-      url: `/uploads/content/${file.filename}`,
-      mimeType: file.mimetype,
-      sortOrder: index,
-    }));
+    const gallery = isCloudinaryEnabled
+      ? await Promise.all(
+          params.galleryFiles.map(async (file, index) => ({
+            url: await this.resolveRequiredFileUrl(file),
+            mimeType: file.mimetype,
+            sortOrder: index,
+          })),
+        )
+      : params.galleryFiles.map((file, index) => {
+          const local = this.resolveLocalGallery(file);
+          return {
+            url: local.url,
+            mimeType: local.mimeType,
+            sortOrder: index,
+          };
+        });
 
     return this.contentRepository.createContent({
       companyName: params.companyName.trim(),
@@ -59,6 +101,7 @@ export class ContentService {
       category: params.category.trim(),
       showOnHome: params.showOnHome,
       showOnPortfolio: params.showOnPortfolio,
+      logoLabel: params.logoLabel?.trim(),
       coverUrl,
       coverMimeType: params.coverFile?.mimetype,
       logoUrl,
@@ -74,26 +117,52 @@ export class ContentService {
     category?: string;
     showOnHome?: boolean;
     showOnPortfolio?: boolean;
+    logoLabel?: string | null;
     coverFile?: Express.Multer.File;
     logoFile?: Express.Multer.File;
+    removeCover?: boolean;
+    removeLogo?: boolean;
     galleryFiles?: Express.Multer.File[];
     removeMediaIds?: string[];
   }) {
+    const coverUrl = data.coverFile
+      ? await this.resolveRequiredFileUrl(data.coverFile)
+      : data.removeCover
+        ? null
+        : undefined;
+    const coverMimeType = data.coverFile ? data.coverFile.mimetype : data.removeCover ? null : undefined;
+
+    const logoUrl = data.logoFile
+      ? await this.resolveRequiredFileUrl(data.logoFile)
+      : data.removeLogo
+        ? null
+        : undefined;
+    const logoMimeType = data.logoFile ? data.logoFile.mimetype : data.removeLogo ? null : undefined;
+
     const updateData = {
       companyName: data.companyName?.trim(),
       title: data.title?.trim(),
       category: data.category?.trim(),
       showOnHome: data.showOnHome,
       showOnPortfolio: data.showOnPortfolio,
-      coverUrl: data.coverFile ? `/uploads/content/${data.coverFile.filename}` : undefined,
-      coverMimeType: data.coverFile?.mimetype,
-      logoUrl: data.logoFile ? `/uploads/content/${data.logoFile.filename}` : undefined,
-      logoMimeType: data.logoFile?.mimetype,
-      gallery: (data.galleryFiles ?? []).map((file, index) => ({
-        url: `/uploads/content/${file.filename}`,
-        mimeType: file.mimetype,
-        sortOrder: index,
-      })),
+      logoLabel: data.logoLabel === null ? null : data.logoLabel?.trim(),
+      coverUrl,
+      coverMimeType,
+      logoUrl,
+      logoMimeType,
+      gallery: isCloudinaryEnabled
+        ? await Promise.all(
+            (data.galleryFiles ?? []).map(async (file, index) => ({
+              url: await this.resolveRequiredFileUrl(file),
+              mimeType: file.mimetype,
+              sortOrder: index,
+            })),
+          )
+        : (data.galleryFiles ?? []).map((file, index) => ({
+            url: `/uploads/content/${file.filename}`,
+            mimeType: file.mimetype,
+            sortOrder: index,
+          })),
       replaceGallery: Boolean(data.galleryFiles && data.galleryFiles.length > 0),
       removeMediaIds: data.removeMediaIds ?? [],
     };
