@@ -27,6 +27,6 @@ export const contentUpload = multer({
   storage,
   limits: {
     files: 20,
-    fileSize: 100 * 1024 * 1024,
+    fileSize: 500 * 1024 * 1024, // 500MB per file
   },
 });
