@@ -10,6 +10,26 @@ import { prisma } from './db/prisma.js';
 
 export const app = express();
 
+const normalizeOrigin = (value: string) => value.trim().replace(/\/$/, '').toLowerCase();
+
+const isAllowedOrigin = (origin: string) => {
+  const normalizedOrigin = normalizeOrigin(origin);
+  const allowedOrigins = env.FRONTEND_ORIGINS.map(normalizeOrigin);
+
+  if (allowedOrigins.includes(normalizedOrigin)) {
+    return true;
+  }
+
+  try {
+    const hostname = new URL(normalizedOrigin).hostname.toLowerCase();
+    return env.FRONTEND_ORIGIN_SUFFIXES.some(
+      (suffix) => hostname === suffix.replace(/^\./, '') || hostname.endsWith(suffix),
+    );
+  } catch {
+    return false;
+  }
+};
+
 app.use(
   helmet({
     // Required so the frontend (different origin/port) can display images/videos served by this API.
@@ -24,7 +44,7 @@ app.use(
         return;
       }
 
-      if (env.FRONTEND_ORIGINS.includes(origin)) {
+      if (isAllowedOrigin(origin)) {
         callback(null, true);
         return;
       }

@@ -14,6 +14,15 @@ const envSchema = z.object({
         .map((origin) => origin.trim())
         .filter(Boolean),
     ),
+  FRONTEND_ORIGIN_SUFFIXES: z
+    .string()
+    .default('.pixelbros.pe')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((suffix) => suffix.trim().toLowerCase())
+        .filter(Boolean),
+    ),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL es obligatorio'),
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET debe tener minimo 32 caracteres'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET debe tener minimo 32 caracteres'),
