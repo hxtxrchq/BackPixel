@@ -2,6 +2,7 @@ import 'dotenv/config';
 
 import { v2 as cloudinary } from 'cloudinary';
 import { PrismaClient } from '@prisma/client';
+import { Readable } from 'node:stream';
 
 type CloudConfig = {
   cloudName: string;
@@ -51,6 +52,117 @@ const configureCloudinary = (config: CloudConfig) => {
 };
 
 const normalizeUrl = (url: string) => url.trim();
+
+type ParsedCloudinaryUrl = {
+  resourceType: 'image' | 'video' | 'raw';
+  deliveryType: string;
+  version?: number;
+  publicId: string;
+  format?: string;
+};
+
+const parseCloudinaryUrl = (url: string, expectedCloudName: string): ParsedCloudinaryUrl | null => {
+  const regex = new RegExp(`^https://res\\.cloudinary\\.com/${expectedCloudName}/(image|video|raw)/([^/]+)/(.+)$`);
+  const match = normalizeUrl(url).match(regex);
+  if (!match) return null;
+
+  const [, resourceType, deliveryType, rest] = match;
+  const parts = rest.split('/').filter(Boolean);
+  if (parts.length === 0) return null;
+
+  let version: number | undefined;
+  let assetPathParts = parts;
+  if (/^v\d+$/.test(parts[0])) {
+    version = Number.parseInt(parts[0].slice(1), 10);
+    assetPathParts = parts.slice(1);
+  }
+
+  if (assetPathParts.length === 0) return null;
+
+  const assetPath = assetPathParts.join('/');
+  const dotIndex = assetPath.lastIndexOf('.');
+  if (dotIndex <= 0 || dotIndex === assetPath.length - 1) {
+    return {
+      resourceType: resourceType as ParsedCloudinaryUrl['resourceType'],
+      deliveryType,
+      version,
+      publicId: assetPath,
+    };
+  }
+
+  return {
+    resourceType: resourceType as ParsedCloudinaryUrl['resourceType'],
+    deliveryType,
+    version,
+    publicId: assetPath.slice(0, dotIndex),
+    format: assetPath.slice(dotIndex + 1),
+  };
+};
+
+const getSignedSourceUrl = (parsed: ParsedCloudinaryUrl, oldCloud: CloudConfig) => {
+  configureCloudinary(oldCloud);
+
+  const sourceUrl = cloudinary.url(parsed.publicId, {
+    resource_type: parsed.resourceType,
+    type: parsed.deliveryType,
+    format: parsed.format,
+    version: parsed.version,
+    secure: true,
+    sign_url: true,
+  });
+
+  return sourceUrl;
+};
+
+const uploadBufferToNewCloud = async (
+  sourceUrl: string,
+  oldCloud: CloudConfig,
+  newCloud: CloudConfig,
+  targetFolder?: string,
+) => {
+  const response = await fetch(sourceUrl, {
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${oldCloud.apiKey}:${oldCloud.apiSecret}`).toString('base64')}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`No se pudo descargar asset origen: ${response.status} ${response.statusText}`);
+  }
+
+  const mimeType = response.headers.get('content-type') || 'application/octet-stream';
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  configureCloudinary(newCloud);
+
+  return new Promise<{ secure_url?: string }>((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: 'auto',
+        folder: targetFolder,
+        use_filename: true,
+        unique_filename: true,
+        overwrite: false,
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        if (!result?.secure_url) {
+          reject(new Error('Cloudinary no devolvio secure_url en upload_stream'));
+          return;
+        }
+
+        resolve({ secure_url: result.secure_url });
+      },
+    );
+
+    Readable.from(buffer).pipe(uploadStream);
+  });
+};
 
 const main = async () => {
   const oldCloud = getCloudConfig('OLD');
@@ -107,6 +219,7 @@ const main = async () => {
   configureCloudinary(newCloud);
 
   const urlMap = new Map<string, string>();
+  const failures: string[] = [];
 
   let index = 0;
   for (const oldUrl of oldUrls) {
@@ -114,6 +227,7 @@ const main = async () => {
     process.stdout.write(`Migrando ${index}/${oldUrls.size}: ${oldUrl}\n`);
 
     try {
+      configureCloudinary(newCloud);
       const uploadResult = await cloudinary.uploader.upload(oldUrl, {
         resource_type: 'auto',
         folder: options.targetFolder,
@@ -128,8 +242,28 @@ const main = async () => {
 
       urlMap.set(oldUrl, uploadResult.secure_url);
     } catch (error) {
-      process.stdout.write(`Fallo migrando URL: ${oldUrl}\n`);
-      throw error;
+      process.stdout.write(`Fallo migrando URL (directa): ${oldUrl}\n`);
+
+      try {
+        const parsed = parseCloudinaryUrl(oldUrl, oldCloud.cloudName);
+        if (!parsed) {
+          throw new Error('No se pudo parsear la URL de Cloudinary para fallback firmado');
+        }
+
+        const signedSourceUrl = getSignedSourceUrl(parsed, oldCloud);
+        const fallbackResult = await uploadBufferToNewCloud(signedSourceUrl, oldCloud, newCloud, options.targetFolder);
+
+        if (!fallbackResult.secure_url) {
+          throw new Error('Fallback sin secure_url');
+        }
+
+        process.stdout.write(`Fallback OK: ${oldUrl}\n`);
+        urlMap.set(oldUrl, fallbackResult.secure_url);
+      } catch (fallbackError) {
+        failures.push(oldUrl);
+        process.stdout.write(`Fallo definitivo: ${oldUrl}\n`);
+        process.stdout.write(`${String(fallbackError)}\n`);
+      }
     }
   }
 
@@ -181,6 +315,12 @@ const main = async () => {
   console.log(`coverUrl actualizadas: ${coverUpdates}`);
   console.log(`logoUrl actualizadas: ${logoUpdates}`);
   console.log(`media.url actualizadas: ${mediaUpdates}`);
+  console.log(`assets fallidos: ${failures.length}`);
+
+  if (failures.length > 0) {
+    console.log('Listado de fallos (primeros 20):');
+    failures.slice(0, 20).forEach((item) => console.log(`- ${item}`));
+  }
 };
 
 main()
