@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { HttpError } from '../../lib/http-error.js';
 import { ContentRepository } from './content.repository.js';
 import { isCloudinaryEnabled, uploadBufferToCloudinary } from '../../lib/cloudinary.js';
@@ -84,7 +85,8 @@ export class ContentService {
     createdById?: string;
   }) {
     const title = params.title?.trim() || params.companyName.trim();
-    const slug = `${slugify(params.category)}-${slugify(title)}-${Date.now().toString().slice(-6)}`;
+    const uid = randomBytes(4).toString('hex');
+    const slug = `${slugify(params.category)}-${slugify(title)}-${uid}`;
 
     const coverUrl = await this.resolveOptionalFileUrl(params.coverFile);
     const logoUrl = await this.resolveOptionalFileUrl(params.logoFile);

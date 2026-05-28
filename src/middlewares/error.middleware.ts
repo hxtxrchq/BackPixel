@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
+import { Prisma } from '@prisma/client';
 import { HttpError } from '../lib/http-error.js';
 
 type ErrorLike = {
@@ -51,6 +52,19 @@ export const errorHandler = (err: unknown, _req: Request, res: Response, _next: 
     return res.status(503).json({
       message: 'No se pudo conectar a la base de datos. Verifica la conexion de Supabase.',
     });
+  }
+
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === 'P2002') {
+      return res.status(409).json({
+        message: 'Ya existe un registro con esos datos. Intenta con un nombre o categoria diferente.',
+      });
+    }
+    if (err.code === 'P2025') {
+      return res.status(404).json({
+        message: 'Registro no encontrado.',
+      });
+    }
   }
 
   return res.status(500).json({

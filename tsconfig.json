@@ -12,5 +12,6 @@
     "rootDir": ".",
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src", "tests", "prisma/seed.ts", "scripts/**/*.ts"]
+  "include": ["src", "tests", "prisma/seed.ts", "scripts/**/*.ts"],
+  "exclude": ["scripts/migrate-cloudinary-used-assets.ts"]
 }
