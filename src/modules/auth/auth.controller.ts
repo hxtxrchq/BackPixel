@@ -8,6 +8,25 @@ const buildMeta = (req: Request) => ({
   ipAddress: req.ip ?? undefined,
 });
 
+const setAccessCookie = (res: Response, accessToken: string) => {
+  res.cookie(env.ACCESS_COOKIE_NAME, accessToken, {
+    httpOnly: true,
+    secure: env.ACCESS_COOKIE_SECURE,
+    sameSite: env.ACCESS_COOKIE_SAMESITE,
+    maxAge: 15 * 60 * 1000,
+    path: '/',
+  });
+};
+
+const clearAccessCookie = (res: Response) => {
+  res.clearCookie(env.ACCESS_COOKIE_NAME, {
+    httpOnly: true,
+    secure: env.ACCESS_COOKIE_SECURE,
+    sameSite: env.ACCESS_COOKIE_SAMESITE,
+    path: '/',
+  });
+};
+
 const setRefreshCookie = (res: Response, refreshToken: string) => {
   res.cookie(env.REFRESH_COOKIE_NAME, refreshToken, {
     httpOnly: true,
@@ -34,6 +53,7 @@ export class AuthController {
     try {
       const payload = loginSchema.parse(req.body);
       const result = await this.authService.login(payload.email, payload.password, buildMeta(req));
+      setAccessCookie(res, result.accessToken);
       setRefreshCookie(res, result.refreshToken);
 
       return res.status(200).json({
@@ -54,6 +74,7 @@ export class AuthController {
       }
 
       const result = await this.authService.refresh(refreshToken, buildMeta(req));
+      setAccessCookie(res, result.accessToken);
       setRefreshCookie(res, result.refreshToken);
 
       return res.status(200).json({
@@ -145,6 +166,7 @@ export class AuthController {
     try {
       const refreshToken = req.cookies[env.REFRESH_COOKIE_NAME] as string | undefined;
       await this.authService.logout(refreshToken);
+      clearAccessCookie(res);
       clearRefreshCookie(res);
       return res.status(204).send();
     } catch (error) {

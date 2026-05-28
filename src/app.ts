@@ -10,6 +10,8 @@ import { prisma } from './db/prisma.js';
 
 export const app = express();
 
+app.set('envConfig', env);
+
 const normalizeOrigin = (value: string) => value.trim().replace(/\/$/, '').toLowerCase();
 
 const isAllowedOrigin = (origin: string) => {

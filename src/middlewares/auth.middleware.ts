@@ -18,7 +18,9 @@ declare global {
 
 export const requireAuth = (req: Request, _res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+  const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+  const cookieToken = req.cookies?.[req.app.get('envConfig')?.ACCESS_COOKIE_NAME] as string | undefined;
+  const token = headerToken ?? cookieToken;
 
   if (!token) {
     return next(new HttpError(401, 'Token no enviado'));
