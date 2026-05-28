@@ -17,6 +17,9 @@ server {
     listen 443 ssl http2;
     server_name backendpixel.chiqo.site;
 
+    # Allow large portfolio/project uploads
+    client_max_body_size 100m;
+
     # SSL - Usar Certbot para generar: sudo certbot certonly -d backendpixel.chiqo.site
     ssl_certificate /etc/letsencrypt/live/backendpixel.chiqo.site/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/backendpixel.chiqo.site/privkey.pem;
