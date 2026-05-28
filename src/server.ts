@@ -7,6 +7,10 @@ const startServer = async () => {
     console.log(`API running on http://localhost:${env.PORT}${env.API_PREFIX}`);
   });
 
+  server.on('error', (error) => {
+    console.error('[SERVER_ERROR]', error);
+  });
+
   ensurePrismaConnected({
     maxAttempts: 10,
     initialDelayMs: 700,
@@ -15,14 +19,17 @@ const startServer = async () => {
       console.log('[BOOT] Base de datos lista para operaciones.');
     })
     .catch((error) => {
-      console.error('[BOOT] Base de datos no disponible al iniciar. El servidor seguira activo y reintentara en consultas:', error);
+      console.error('[BOOT] Base de datos no disponible al iniciar:', error);
     });
+
+  // Keeps the event loop alive — prevents accidental drainage
+  const keepAlive = setInterval(() => {}, 30_000);
 
   const shutdown = async (signal: string) => {
     console.log(`[SHUTDOWN] Recibido ${signal}, cerrando servidor...`);
+    clearInterval(keepAlive);
     await new Promise<void>((resolve) => {
       server.close(() => resolve());
-      // Force close after 10 seconds
       setTimeout(() => resolve(), 10_000);
     });
     await prismaRaw.$disconnect().catch(() => undefined);
@@ -40,6 +47,10 @@ const startServer = async () => {
   process.on('uncaughtException', (error) => {
     console.error('[UNCAUGHT_EXCEPTION]', error);
     process.exit(1);
+  });
+
+  process.on('exit', (code) => {
+    console.log(`[EXIT] Proceso saliendo con codigo ${code}`);
   });
 };
 
