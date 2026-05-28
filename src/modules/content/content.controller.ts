@@ -65,6 +65,13 @@ export class ContentController {
 
       return res.status(201).json({ item });
     } catch (error) {
+      console.error('[ContentController.create] Error al crear contenido:', {
+        name: error instanceof Error ? error.constructor.name : typeof error,
+        message: error instanceof Error ? error.message : String(error),
+        code: (error as any)?.code,
+        meta: (error as any)?.meta,
+        stack: error instanceof Error ? error.stack?.split('\n').slice(0, 5).join('\n') : undefined,
+      });
       return next(error);
     }
   };
