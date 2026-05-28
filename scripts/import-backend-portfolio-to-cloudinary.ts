@@ -172,6 +172,7 @@ const chooseLogo = (assets: UploadedAsset[]) =>
 
 async function main() {
   const apply = hasFlag('apply');
+  const uploadOnly = hasFlag('upload-only');
   const portfolioRoot = path.resolve(
     process.cwd(),
     getArgValue('root') || process.env.PORTFOLIO_IMPORT_ROOT || 'uploads/Portfolio',
@@ -245,45 +246,47 @@ async function main() {
     const cover = mediaRows[0];
     const logoAsset = chooseLogo(uploadedAssets);
 
-    const exists = await prisma.content.findUnique({ where: { slug }, select: { id: true } });
+    if (!uploadOnly) {
+      const exists = await prisma.content.findUnique({ where: { slug }, select: { id: true } });
 
-    await prisma.content.upsert({
-      where: { slug },
-      update: {
-        companyName: projectName,
-        title: projectName,
-        category: categoryName,
-        showOnPortfolio: true,
-        coverUrl: cover?.url,
-        coverMimeType: cover?.mimeType,
-        logoUrl: logoAsset?.url,
-        logoMimeType: logoAsset?.mimeType,
-        galleryCount: mediaRows.length,
-        medias: {
-          deleteMany: {},
-          create: mediaRows,
+      await prisma.content.upsert({
+        where: { slug },
+        update: {
+          companyName: projectName,
+          title: projectName,
+          category: categoryName,
+          showOnPortfolio: true,
+          coverUrl: cover?.url,
+          coverMimeType: cover?.mimeType,
+          logoUrl: logoAsset?.url,
+          logoMimeType: logoAsset?.mimeType,
+          galleryCount: mediaRows.length,
+          medias: {
+            deleteMany: {},
+            create: mediaRows,
+          },
         },
-      },
-      create: {
-        companyName: projectName,
-        title: projectName,
-        slug,
-        category: categoryName,
-        showOnHome: false,
-        showOnPortfolio: true,
-        coverUrl: cover?.url,
-        coverMimeType: cover?.mimeType,
-        logoUrl: logoAsset?.url,
-        logoMimeType: logoAsset?.mimeType,
-        galleryCount: mediaRows.length,
-        medias: {
-          create: mediaRows,
+        create: {
+          companyName: projectName,
+          title: projectName,
+          slug,
+          category: categoryName,
+          showOnHome: false,
+          showOnPortfolio: true,
+          coverUrl: cover?.url,
+          coverMimeType: cover?.mimeType,
+          logoUrl: logoAsset?.url,
+          logoMimeType: logoAsset?.mimeType,
+          galleryCount: mediaRows.length,
+          medias: {
+            create: mediaRows,
+          },
         },
-      },
-    });
+      });
 
-    if (exists) updated += 1;
-    else created += 1;
+      if (exists) updated += 1;
+      else created += 1;
+    }
 
     console.log(`Proyecto procesado: ${key} (media: ${mediaRows.length})`);
   }
@@ -291,8 +294,12 @@ async function main() {
   console.log('Importacion completada.');
   console.log(`Assets subidos: ${uploaded}`);
   console.log(`Assets fallidos: ${failed}`);
-  console.log(`Proyectos creados: ${created}`);
-  console.log(`Proyectos actualizados: ${updated}`);
+  if (uploadOnly) {
+    console.log('Modo upload-only: no se actualizo base de datos.');
+  } else {
+    console.log(`Proyectos creados: ${created}`);
+    console.log(`Proyectos actualizados: ${updated}`);
+  }
 }
 
 main()
