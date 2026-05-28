@@ -114,6 +114,24 @@ const getSignedSourceUrl = (parsed: ParsedCloudinaryUrl, oldCloud: CloudConfig) 
   return sourceUrl;
 };
 
+const getPrivateDownloadSourceUrl = (parsed: ParsedCloudinaryUrl, oldCloud: CloudConfig) => {
+  configureCloudinary(oldCloud);
+
+  if (!parsed.format) {
+    throw new Error('No se pudo obtener formato para private_download_url');
+  }
+
+  const expiresAt = Math.floor(Date.now() / 1000) + 60 * 15;
+
+  return cloudinary.utils.private_download_url(parsed.publicId, parsed.format, {
+    resource_type: parsed.resourceType,
+    type: parsed.deliveryType,
+    expires_at: expiresAt,
+    attachment: false,
+    secure: true,
+  });
+};
+
 const uploadBufferToNewCloud = async (
   sourceUrl: string,
   oldCloud: CloudConfig,
@@ -251,9 +269,16 @@ const main = async () => {
         }
 
         const signedSourceUrl = getSignedSourceUrl(parsed, oldCloud);
-        const fallbackResult = await uploadBufferToNewCloud(signedSourceUrl, oldCloud, newCloud, options.targetFolder);
+        let fallbackResult: { secure_url?: string } | null = null;
 
-        if (!fallbackResult.secure_url) {
+        try {
+          fallbackResult = await uploadBufferToNewCloud(signedSourceUrl, oldCloud, newCloud, options.targetFolder);
+        } catch {
+          const privateDownloadUrl = getPrivateDownloadSourceUrl(parsed, oldCloud);
+          fallbackResult = await uploadBufferToNewCloud(privateDownloadUrl, oldCloud, newCloud, options.targetFolder);
+        }
+
+        if (!fallbackResult?.secure_url) {
           throw new Error('Fallback sin secure_url');
         }
 
