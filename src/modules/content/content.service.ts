@@ -22,12 +22,17 @@ export class ContentService {
   private async resolveRequiredFileUrl(file: Express.Multer.File): Promise<string> {
     // When enabled, store media in Cloudinary to survive serverless deployments.
     if (isCloudinaryEnabled && (file as any).buffer) {
-      return uploadBufferToCloudinary({
-        buffer: (file as any).buffer,
-        originalName: file.originalname,
-        folder: 'pixelbros/content',
-        resourceType: 'auto',
-      });
+      try {
+        return await uploadBufferToCloudinary({
+          buffer: (file as any).buffer,
+          originalName: file.originalname,
+          folder: 'pixelbros/content',
+          resourceType: 'auto',
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new HttpError(500, `No se pudo subir "${file.originalname}" a Cloudinary: ${message}`);
+      }
     }
 
     if (!file.filename) {
