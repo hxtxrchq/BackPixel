@@ -106,7 +106,7 @@ async function main() {
       .map((media, index) => ({
         url: media.url,
         mimeType: media.mimeType,
-        sortOrder: Number.isFinite(media.sortOrder) ? media.sortOrder : index,
+        sortOrder: media.sortOrder ?? index,
       }));
 
     const slug = `${slugify(bucket.categoryName)}-${slugify(bucket.projectName)}`;
