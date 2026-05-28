@@ -18,16 +18,33 @@ const startServer = async () => {
       console.error('[BOOT] Base de datos no disponible al iniciar. El servidor seguira activo y reintentara en consultas:', error);
     });
 
-  const shutdown = async () => {
+  const shutdown = async (signal: string) => {
+    console.log(`[SHUTDOWN] Recibido ${signal}, cerrando servidor...`);
+    await new Promise<void>((resolve) => {
+      server.close(() => resolve());
+      // Force close after 10 seconds
+      setTimeout(() => resolve(), 10_000);
+    });
     await prismaRaw.$disconnect().catch(() => undefined);
-    server.close();
+    console.log('[SHUTDOWN] Servidor cerrado.');
+    process.exit(0);
   };
 
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+  process.on('unhandledRejection', (reason) => {
+    console.error('[UNHANDLED_REJECTION]', reason);
+  });
+
+  process.on('uncaughtException', (error) => {
+    console.error('[UNCAUGHT_EXCEPTION]', error);
+    process.exit(1);
+  });
 };
 
 startServer().catch((error) => {
   console.error('[BOOT] No se pudo iniciar el servidor:', error);
   process.exit(1);
 });
+
