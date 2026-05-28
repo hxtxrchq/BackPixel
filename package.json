@@ -17,6 +17,7 @@
     "db:setup": "npm run db:generate && npm run db:migrate && npm run db:seed",
     "db:sync": "npm run db:generate && prisma db push && npm run db:seed",
     "content:import:portfolio": "tsx scripts/import-portfolio-manifest.ts",
+    "content:import:backend-portfolio": "tsx scripts/import-backend-portfolio-to-cloudinary.ts",
     "cloudinary:migrate:used-assets": "tsx scripts/migrate-cloudinary-used-assets.ts"
   },
   "keywords": [],
